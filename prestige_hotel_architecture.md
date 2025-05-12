@@ -8,6 +8,8 @@ flowchart TD
     classDef serviceNode fill:#0288D1,stroke:#29B6F6,stroke-width:1px,color:white
     classDef infrastructureNode fill:#FFA000,stroke:#FFCA28,stroke-width:2px,color:white,font-weight:bold
     classDef externalNode fill:#5D4037,stroke:#8D6E63,stroke-width:2px,color:white,font-weight:bold
+    classDef dataAccessNode fill:#558B2F,stroke:#8BC34A,stroke-width:1px,color:white
+    classDef securityNode fill:#E53935,stroke:#EF5350,stroke-width:1px,color:white
 
     %% Main Client Section
     subgraph Clients["🌐 CLIENT TIER"]
@@ -27,6 +29,9 @@ flowchart TD
             FeedbackC["⭐ Feedback<br/>Controller"]
             AdminC["🛡️ Admin<br/>Controller"]
             SupportC["📞 Support<br/>Controller"]
+            SearchC["🔍 Search<br/>Controller"]
+            PaymentC["💲 Payment<br/>Controller"]
+            ReportC["📊 Report<br/>Controller"]
         end
 
         %% Models Subsection
@@ -38,6 +43,12 @@ flowchart TD
             PaymentM["💳 Payment<br/>Model"]
             FeedbackM["⭐ Feedback<br/>Model"]
             SupportM["📞 Support<br/>Model"]
+            RoomTypeM["🛏️ RoomType<br/>Model"]
+            AmenityM["🧳 Amenity<br/>Model"]
+            DiscountM["🏷️ Discount<br/>Model"]
+            ReviewM["📝 Review<br/>Model"]
+            MediaM["🖼️ Media<br/>Model"]
+            LocationM["📍 Location<br/>Model"]
         end
 
         %% Views Subsection
@@ -46,6 +57,13 @@ flowchart TD
             CustDash["👤 Customer<br/>Dashboard"]
             HotelAdminDash["👨‍💼 Hotel Admin<br/>Dashboard"]
             SysAdminDash["🔧 System Admin<br/>Dashboard"]
+            RoomListView["🏨 Room Listing<br/>View"]
+            BookingView["📝 Booking<br/>View"]
+            ReportView["📈 Reports<br/>View"]
+            ProfileView["👤 User Profile<br/>View"]
+            HotelDetailView["🏨 Hotel Detail<br/>View"]
+            PaymentView["💳 Payment<br/>View"]
+            SearchView["🔍 Search Results<br/>View"]
         end
 
         %% Services Subsection
@@ -58,15 +76,44 @@ flowchart TD
             FeedbackS["⭐ Feedback<br/>Service"]
             SupportS["📞 Support<br/>Service"]
             EmailS["📧 Email<br/>Service"]
+            NotificationS["🔔 Notification<br/>Service"]
+            ReportS["📊 Report<br/>Service"]
+            SearchS["🔍 Search<br/>Service"]
+            CacheS["⚡ Cache<br/>Service"]
+            AuthS["🔒 Authentication<br/>Service"]
+        end
+        
+        %% Cross-cutting concerns
+        subgraph CrossCut["🔄 CROSS-CUTTING CONCERNS"]
+            Logging["📝 Logging<br/>& Monitoring"]
+            ErrorH["⚠️ Error<br/>Handling"]
+            Security["🔒 Security<br/>Module"]
+            DTO["📦 Data Transfer<br/>Objects"]
+            Validation["✅ Data<br/>Validation"]
         end
 
-        DAL["💾 Data Access Layer<br/>(Repository Pattern)"]
+        %% Data Access Layer
+        subgraph DataAccess["💾 DATA ACCESS LAYER"]
+            Repos["📁 Repositories"]
+            UnitOfWork["🔄 Unit of Work<br/>Pattern"]
+            EFCore["🔌 Entity Framework<br/>Core"]
+            QueryService["🔍 Query<br/>Service"]
+            CacheRepo["⚡ Cache<br/>Repository"]
+        end
     end
 
     %% Data Tier Section
     subgraph Infra["💾 DATA TIER"]
         Redis["⚡ Redis Cache<br/>(Hotel Search & Session)"]
         MSSQL["🗄️ MSSQL Database<br/>(Primary Data Storage)"]
+        subgraph Storage["📂 STORAGE"]
+            BlobStorage["🖼️ Blob Storage<br/>(Media Files)"]
+            Backup["🔄 Backup<br/>System"]
+        end
+        subgraph Monitoring["📊 MONITORING"]
+            Logs["📝 Log<br/>Storage"]
+            Metrics["📈 Metrics<br/>Collection"]
+        end
     end
 
     %% External Services Section
@@ -74,6 +121,8 @@ flowchart TD
         Auth0["🔑 Auth0<br/>(Authentication)"]
         GMaps["🗺️ Google Maps API<br/>(Location Services)"]
         Iyzico["💲 Iyzico Payment<br/>(Payment Processing)"]
+        EmailProvider["📧 SMTP Provider<br/>(Email Delivery)"]
+        SMSGateway["📱 SMS Gateway<br/>(Text Notifications)"]
     end
 
     %% Connection Definitions with Labels
@@ -83,32 +132,46 @@ flowchart TD
 
     %% MVC Flow Connections
     Controllers <--> Services
-    Services --> DAL
+    Services <--> DataAccess
     Services --> Models
     Controllers --> Views
+    Models <--> DataAccess
 
     %% View Dashboard Connections
     Views --> CustDash
     Views --> HotelAdminDash
     Views --> SysAdminDash
+
+    %% Cross-cutting concerns connections
+    Controllers <--> CrossCut
+    Services <--> CrossCut
+    DataAccess <--> CrossCut
     
     %% Data Access Connections
-    DAL -- "Entity Framework Core" --> MSSQL
-    Services -- "StackExchange.Redis" --> Redis
+    DataAccess -- "Entity Framework Core" --> MSSQL
+    DataAccess -- "StackExchange.Redis" --> Redis
+    DataAccess -- "Azure Storage SDK" --> BlobStorage
+    
+    %% Monitoring connections
+    Logging --> Logs
+    ErrorH --> Logs
     
     %% External Service Connections
-    Services -- "OAuth 2.0" --> Auth0
-    Services -- "Maps JavaScript API" --> GMaps
-    Services -- "Payment API" --> Iyzico
-    Services -- "SMTP" --> EmailS
+    AuthS -- "OAuth 2.0" --> Auth0
+    HotelS -- "Maps JavaScript API" --> GMaps
+    PaymentS -- "Payment API" --> Iyzico
+    EmailS -- "SMTP" --> EmailProvider
+    NotificationS -- "SMS API" --> SMSGateway
     
     %% Apply Classes
     class Clients,CB,HAB,SAB clientNode
-    class WebApp,Controllers,Models,Views,Services,DAL webNode
-    class AuthC,HotelC,ResC,HMC,FeedbackC,AdminC,SupportC controllerNode
-    class UserM,HotelM,RoomM,ResM,PaymentM,FeedbackM,SupportM modelNode
-    class RazorUI,CustDash,HotelAdminDash,SysAdminDash viewNode
-    class UserS,HotelS,RoomS,ResS,PaymentS,FeedbackS,SupportS,EmailS serviceNode
-    class Infra,Redis,MSSQL infrastructureNode
-    class External,Auth0,GMaps,Iyzico externalNode
+    class WebApp,Controllers,Models,Views,Services,CrossCut,DataAccess webNode
+    class AuthC,HotelC,ResC,HMC,FeedbackC,AdminC,SupportC,SearchC,PaymentC,ReportC controllerNode
+    class UserM,HotelM,RoomM,ResM,PaymentM,FeedbackM,SupportM,RoomTypeM,AmenityM,DiscountM,ReviewM,MediaM,LocationM modelNode
+    class RazorUI,CustDash,HotelAdminDash,SysAdminDash,RoomListView,BookingView,ReportView,ProfileView,HotelDetailView,PaymentView,SearchView viewNode
+    class UserS,HotelS,RoomS,ResS,PaymentS,FeedbackS,SupportS,EmailS,NotificationS,ReportS,SearchS,CacheS,AuthS serviceNode
+    class Repos,UnitOfWork,EFCore,QueryService,CacheRepo dataAccessNode
+    class Logging,ErrorH,Security,DTO,Validation securityNode
+    class Infra,Redis,MSSQL,Storage,BlobStorage,Backup,Monitoring,Logs,Metrics infrastructureNode
+    class External,Auth0,GMaps,Iyzico,EmailProvider,SMSGateway externalNode
 ``` 
