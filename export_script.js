@@ -1,85 +1,65 @@
 // Mermaid diyagramını PNG'ye dönüştürmek için Node.js scripti
 // Bu script'i kullanmak için aşağıdaki adımları izleyin:
 // 1. Node.js yüklü olmalı (https://nodejs.org/)
-// 2. Aşağıdaki paketleri yükleyin: npm install puppeteer mermaid.cli
+// 2. Mermaid-CLI'yi yükleyin: npm install -g @mermaid-js/mermaid-cli
 // 3. Bu scripti çalıştırın: node export_script.js
 
 const fs = require('fs');
-const path = require('path');
-const { exec } = require('child_process');
+const { execSync } = require('child_process');
 
-// Diyagram dosya yolu
+// Dosya yolları
 const diagramFile = 'prestige_hotel_architecture.md';
-// Çıktı dosya yolu
+const tempFile = 'temp_diagram.mmd';
 const outputFile = 'prestige_hotel_architecture.png';
 
-// Mermaid kodunu Markdown dosyasından çıkartma
-function extractMermaidCode(filePath) {
-  try {
-    const content = fs.readFileSync(filePath, 'utf8');
-    const mermaidRegex = /```mermaid\s*([\s\S]*?)\s*```/;
-    const match = content.match(mermaidRegex);
-    
-    if (match && match[1]) {
-      return match[1].trim();
-    } else {
-      throw new Error('Mermaid kodu bulunamadı.');
-    }
-  } catch (error) {
-    console.error('Dosya okuma hatası:', error.message);
-    process.exit(1);
+try {
+  // 1. Adım: Markdown dosyasının içeriğini oku
+  console.log(`Dosya okunuyor: ${diagramFile}`);
+  const content = fs.readFileSync(diagramFile, 'utf8');
+  
+  // 2. Adım: Mermaid kodunu çıkart
+  console.log('Mermaid kodu çıkartılıyor...');
+  const mermaidRegex = /```mermaid\s*([\s\S]*?)\s*```/;
+  const match = content.match(mermaidRegex);
+  
+  if (!match || !match[1]) {
+    throw new Error('Mermaid kodu bulunamadı!');
   }
-}
-
-// Geçici .mmd dosyası oluşturma
-function createTempMermaidFile(code) {
-  const tempFile = 'temp_diagram.mmd';
-  try {
-    fs.writeFileSync(tempFile, code);
-    console.log('Geçici Mermaid dosyası oluşturuldu.');
-    return tempFile;
-  } catch (error) {
-    console.error('Geçici dosya oluşturma hatası:', error.message);
-    process.exit(1);
-  }
-}
-
-// mermaid-cli ile PNG dönüşümü
-function convertToPNG(inputFile, outputFile) {
+  
+  const mermaidCode = match[1].trim();
+  
+  // 3. Adım: Geçici .mmd dosyası oluştur
+  console.log(`Geçici dosya oluşturuluyor: ${tempFile}`);
+  fs.writeFileSync(tempFile, mermaidCode);
+  
+  // 4. Adım: PNG'ye dönüştür
+  console.log('PNG dönüşümü başlıyor...');
   const width = 3000; // Genişlik (piksel)
   const height = 3000; // Yükseklik (piksel)
   
-  console.log('Diyagram PNG\'ye dönüştürülüyor...');
+  const command = `mmdc -i ${tempFile} -o ${outputFile} -w ${width} -H ${height} -b transparent`;
   
-  const command = `npx mmdc -i ${inputFile} -o ${outputFile} -w ${width} -H ${height} -b transparent`;
+  execSync(command, { stdio: 'inherit' });
   
-  exec(command, (error, stdout, stderr) => {
-    if (error) {
-      console.error(`Dönüştürme hatası: ${error.message}`);
-      return;
+  console.log(`\nDönüşüm başarılı! PNG dosyası oluşturuldu: ${outputFile}`);
+  console.log(`Çözünürlük: ${width}x${height} piksel`);
+  
+  // 5. Adım: Geçici dosyayı temizle
+  fs.unlinkSync(tempFile);
+  console.log('Geçici dosya temizlendi.');
+  
+} catch (error) {
+  console.error('Hata:', error.message);
+  
+  // Hata olsa bile geçici dosyayı temizlemeye çalış
+  try {
+    if (fs.existsSync(tempFile)) {
+      fs.unlinkSync(tempFile);
+      console.log('Geçici dosya temizlendi.');
     }
-    
-    if (stderr) {
-      console.error(`Hata çıktısı: ${stderr}`);
-      return;
-    }
-    
-    console.log(`Diyagram başarıyla PNG'ye dönüştürüldü: ${outputFile}`);
-    console.log(`Çözünürlük: ${width}x${height} piksel`);
-    
-    // Geçici dosyayı temizle
-    fs.unlinkSync(inputFile);
-    console.log('Geçici dosya temizlendi.');
-  });
-}
-
-// Ana çalıştırma fonksiyonu
-function main() {
-  console.log('Mermaid diyagramı dönüştürme başlıyor...');
-  const mermaidCode = extractMermaidCode(diagramFile);
-  const tempFile = createTempMermaidFile(mermaidCode);
-  convertToPNG(tempFile, outputFile);
-}
-
-// Scripti çalıştır
-main(); 
+  } catch (cleanupError) {
+    console.error('Geçici dosya temizleme hatası:', cleanupError.message);
+  }
+  
+  process.exit(1);
+} 

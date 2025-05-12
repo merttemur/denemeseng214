@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mermaid Diyagramı PNG Dönüştürücüsü</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #1976D2;
+            text-align: center;
+        }
+        textarea {
+            width: 100%;
+            height: 300px;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        button {
+            background-color: #1976D2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #1565C0;
+        }
+        #preview {
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+            background-color: white;
+            overflow: auto;
+        }
+        .btn-container {
+            text-align: center;
+            margin: 15px 0;
+        }
+        #status {
+            color: #4CAF50;
+            text-align: center;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .instructions {
+            background-color: #e1f5fe;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Mermaid Diyagramı PNG Dönüştürücüsü</h1>
+    
+    <div class="instructions">
+        <h3>Kullanım Talimatları:</h3>
+        <ol>
+            <li>Mermaid kodunu aşağıdaki metin kutusuna yapıştırın.</li>
+            <li>"Önizle" düğmesine tıklayarak diyagramı görüntüleyin.</li>
+            <li>"PNG Olarak İndir" düğmesine tıklayarak diyagramı kaydedin.</li>
+        </ol>
+    </div>
+    
+    <textarea id="mermaidCode" placeholder="Mermaid kodunu buraya yapıştırın..."></textarea>
+    
+    <div class="btn-container">
+        <button onclick="loadSampleCode()">Örnek Kodu Yükle</button>
+        <button onclick="previewDiagram()">Önizle</button>
+        <button onclick="downloadPNG()">PNG Olarak İndir</button>
+    </div>
+    
+    <div id="status"></div>
+    
+    <div id="preview"></div>
+    
+    <script>
+        // Mermaid yapılandırması
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'default',
+            securityLevel: 'loose',
+            fontFamily: 'arial'
+        });
+        
+        // Diyagramı önizle
+        function previewDiagram() {
+            const code = document.getElementById('mermaidCode').value.trim();
+            if (!code) {
+                document.getElementById('status').innerHTML = 'Lütfen Mermaid kodu girin!';
+                document.getElementById('status').style.color = '#F44336';
+                return;
+            }
+            
+            const previewDiv = document.getElementById('preview');
+            previewDiv.innerHTML = '';
+            
+            try {
+                document.getElementById('status').innerHTML = 'Diyagram oluşturuluyor...';
+                document.getElementById('status').style.color = '#2196F3';
+                
+                const tempDiv = document.createElement('div');
+                tempDiv.className = 'mermaid';
+                tempDiv.innerHTML = code;
+                previewDiv.appendChild(tempDiv);
+                
+                mermaid.init(undefined, '.mermaid');
+                
+                document.getElementById('status').innerHTML = 'Diyagram başarıyla oluşturuldu!';
+                document.getElementById('status').style.color = '#4CAF50';
+            } catch (error) {
+                document.getElementById('status').innerHTML = 'Hata: ' + error.message;
+                document.getElementById('status').style.color = '#F44336';
+            }
+        }
+        
+        // PNG olarak indir
+        function downloadPNG() {
+            const code = document.getElementById('mermaidCode').value.trim();
+            if (!code) {
+                document.getElementById('status').innerHTML = 'Lütfen Mermaid kodu girin!';
+                document.getElementById('status').style.color = '#F44336';
+                return;
+            }
+            
+            document.getElementById('status').innerHTML = 'PNG oluşturuluyor...';
+            document.getElementById('status').style.color = '#2196F3';
+            
+            try {
+                const svgElement = document.querySelector('.mermaid svg');
+                if (!svgElement) {
+                    previewDiagram();
+                    setTimeout(downloadPNG, 1000);
+                    return;
+                }
+                
+                // SVG boyutlarını al
+                const svgData = new XMLSerializer().serializeToString(svgElement);
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Boyutu büyüt (daha yüksek kalite için)
+                const scaleFactor = 2;
+                canvas.width = svgElement.viewBox.baseVal.width * scaleFactor;
+                canvas.height = svgElement.viewBox.baseVal.height * scaleFactor;
+                
+                const img = new Image();
+                
+                img.onload = function() {
+                    // Arka planı beyaz yap
+                    ctx.fillStyle = 'white';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    
+                    // SVG çiz
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    
+                    // PNG olarak indir
+                    const pngData = canvas.toDataURL('image/png');
+                    const downloadLink = document.createElement('a');
+                    downloadLink.href = pngData;
+                    downloadLink.download = 'diyagram.png';
+                    document.body.appendChild(downloadLink);
+                    downloadLink.click();
+                    document.body.removeChild(downloadLink);
+                    
+                    document.getElementById('status').innerHTML = 'PNG başarıyla indirildi!';
+                    document.getElementById('status').style.color = '#4CAF50';
+                };
+                
+                img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+                
+            } catch (error) {
+                document.getElementById('status').innerHTML = 'Hata: ' + error.message;
+                document.getElementById('status').style.color = '#F44336';
+            }
+        }
+        
+        // Örnek kodu yükle
+        function loadSampleCode() {
+            fetch('prestige_hotel_architecture.md')
+                .then(response => response.text())
+                .then(text => {
+                    const match = text.match(/```mermaid\s*([\s\S]*?)\s*```/);
+                    if (match && match[1]) {
+                        document.getElementById('mermaidCode').value = match[1].trim();
+                        document.getElementById('status').innerHTML = 'Örnek Mermaid kodu yüklendi!';
+                        document.getElementById('status').style.color = '#4CAF50';
+                    } else {
+                        document.getElementById('status').innerHTML = 'Mermaid kodu bulunamadı!';
+                        document.getElementById('status').style.color = '#F44336';
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('status').innerHTML = 'Dosya yükleme hatası: ' + error.message;
+                    document.getElementById('status').style.color = '#F44336';
+                });
+        }
+    </script>
+</body>
+</html> 
