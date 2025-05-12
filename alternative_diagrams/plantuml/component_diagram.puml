@@ -1,0 +1,65 @@
+@startuml Prestige Hotel Reservation System
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title "Prestige Hotel Reservation - Component Diagram"
+
+Person(customer, "Customer", "A user who wants to book hotel rooms")
+Person(hotelAdmin, "Hotel Administrator", "A user who manages hotel properties")
+Person(sysAdmin, "System Administrator", "A user who manages the system")
+
+System_Boundary(webApp, "Web Application (ASP.NET MVC)") {
+    Container(controllers, "MVC Controllers", "C#", "Handles HTTP requests and application flow") {
+        Component(authC, "Auth Controller", "C#", "Manages user authentication")
+        Component(hotelC, "Hotel Controller", "C#", "Handles hotel-related operations")
+        Component(resC, "Reservation Controller", "C#", "Manages reservations")
+        Component(hmgmtC, "Hotel Management Controller", "C#", "Admin hotel management operations")
+        Component(feedbackC, "Feedback Controller", "C#", "Handles user feedback")
+        Component(adminC, "Admin Controller", "C#", "System administration")
+        Component(supportC, "Support Controller", "C#", "Customer support operations")
+    }
+    
+    Container(views, "MVC Views", "Razor", "Renders UI") {
+        Component(razor, "Razor UI", "Razor", "UI templating")
+        Component(custDash, "Customer Dashboard", "Razor", "Customer portal")
+        Component(hotelAdminDash, "Hotel Admin Dashboard", "Razor", "Hotel management portal")
+        Component(sysAdminDash, "System Admin Dashboard", "Razor", "System administration portal")
+    }
+    
+    Container(services, "Services Layer", "C#", "Business logic") {
+        Component(userS, "User Service", "C#", "User management logic")
+        Component(hotelS, "Hotel Service", "C#", "Hotel management logic")
+        Component(roomS, "Room Service", "C#", "Room management logic")
+        Component(resS, "Reservation Service", "C#", "Reservation logic")
+        Component(paymentS, "Payment Service", "C#", "Payment processing logic")
+        Component(feedbackS, "Feedback Service", "C#", "Feedback management")
+        Component(supportS, "Support Service", "C#", "Support ticket handling")
+        Component(emailS, "Email Service", "C#", "Email notifications")
+    }
+    
+    Container(dal, "Data Access Layer", "C#", "Repository pattern") 
+}
+
+ContainerDb(mssql, "MSSQL Database", "MSSQL", "Stores all application data")
+ContainerDb(redis, "Redis Cache", "Redis", "Caches hotel search and session data")
+
+System_Ext(auth0, "Auth0", "Authentication service")
+System_Ext(gmaps, "Google Maps API", "Location services")
+System_Ext(iyzico, "Iyzico Payment Gateway", "Payment processing")
+
+Rel(customer, controllers, "Uses", "HTTPS")
+Rel(hotelAdmin, controllers, "Uses", "HTTPS")
+Rel(sysAdmin, controllers, "Uses", "HTTPS")
+
+Rel(controllers, services, "Uses")
+Rel(controllers, views, "Returns")
+
+Rel(services, dal, "Uses")
+Rel(dal, mssql, "Reads/Writes")
+Rel(services, redis, "Caches data")
+
+Rel(services, auth0, "Authenticates via", "HTTPS")
+Rel(services, gmaps, "Gets location data", "HTTPS")
+Rel(services, iyzico, "Processes payments", "HTTPS")
+
+SHOW_LEGEND()
+@enduml 
